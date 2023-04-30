@@ -1,14 +1,22 @@
 const express = require('express');
 const multer = require('multer');
 const { spawn } = require('child_process');
+const cors = require('cors');
+const bodyParser = require('body-parser')
 
 const app = express();
 const port = process.env.PORT || 3000;
 const upload = multer();
+// import bodyParser from 'body-parser'
+app.use(bodyParser.json({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
+
+//cors resolving
+app.use(cors());
 
 // Endpoint to handle file upload
-app.post('/api/classify-scenes', upload.single('video'), (req, res) => {
-
+app.post('/api/classify-scenes', (req, res) => {
+  console.log("....")
   // const videoPath = req.files.video.path;
 
   // Spawn a child process to run the scene_classification.py script

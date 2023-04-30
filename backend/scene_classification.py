@@ -7,7 +7,7 @@ import sys
 
 # load the saved model
 model = load_model('E:\4thyear_project\my_model.h5\my_model.h5')
-
+print("Hello World! Welcome to Python Examples.")
 # set the video file path
 video_path = sys.argv[1]
 

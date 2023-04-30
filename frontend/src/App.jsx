@@ -18,7 +18,8 @@ function App() {
     const formData = new FormData();
     formData.append('video', file);
     try {
-      const response = await axios.post('/api/classify-scenes', formData, {
+      console.log("..frontend..")
+      const response = await axios.post('http://127.0.0.1:5173/api/classify-scenes', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
