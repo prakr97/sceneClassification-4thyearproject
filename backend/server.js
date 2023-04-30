@@ -1,50 +1,45 @@
-import express from 'express';
-import multer, { diskStorage } from 'multer';
-import ffmpeg from 'ffmpeg';
+const express = require('express');
+const multer = require('multer');
+const { spawn } = require('child_process');
+
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
+const upload = multer();
 
-const storage = diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, './uploads');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
+// Endpoint to handle file upload
+app.post('/api/classify-scenes', upload.single('video'), (req, res) => {
+
+  // const videoPath = req.files.video.path;
+
+  // Spawn a child process to run the scene_classification.py script
+  const py = spawn('python', ['scene_classification.py', req.file.path]);
+
+  let output = '';
+
+  py.stdout.on('data', (data) => {
+    output += data.toString();
+  });
+
+  py.stderr.on('data', (data) => {
+    console.error(`Error: ${data}`);
+  });
+
+  py.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`Python script exited with code ${code}`);
+      return res.status(500).send('Internal Server Error');
     }
-});
 
-const upload = multer({ storage: storage });
+    // Parse the output from the Python script
+    const frames = output.trim().split('\n').map((line) => {
+      const [framePath, label] = line.split(',');
+      return { framePath, label };
+    });
 
-app.post('/classify-scenes', upload.single('video'), (req, res) => {
-    const videoPath = req.file.path;
-    const outputPath = './uploads/frames';
-
-    try {
-        const process = new ffmpeg(videoPath);
-        process.then((video) => {
-            video.fnExtractFrameToJPG(outputPath, {
-                frame_rate: 1,
-                number: -1
-            }, (error, files) => {
-                if (error) {
-                    console.error(error);
-                    return res.status(500).send('Error extracting frames from video');
-                }
-
-                // Call your pre-trained model to classify the frames here
-
-                return res.status(200).send('Scenes classified successfully');
-            });
-        }, (error) => {
-            console.error(error);
-            return res.status(500).send('Error processing video');
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Error processing video');
-    }
+    res.send(frames);
+  });
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
